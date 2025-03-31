@@ -147,6 +147,12 @@ def calculate_trend_signals(prices_df):
     # Calculate ADX for trend strength
     adx = calculate_adx(prices_df, 14)
 
+    # Calculate MACD
+    macd = calculate_macd(prices_df)
+
+    # Calculate KDJ
+    kdj = calculate_kdj(prices_df)
+
     # Determine trend direction and strength
     short_trend = ema_8 > ema_21
     medium_trend = ema_21 > ema_55
@@ -170,6 +176,11 @@ def calculate_trend_signals(prices_df):
         "metrics": {
             "adx": float(adx["adx"].iloc[-1]),
             "trend_strength": float(trend_strength),
+            "macd_line": float(macd["macd_line"].iloc[-1]),
+            "signal_line": float(macd["signal_line"].iloc[-1]),
+            "%K": float(kdj["%K"].iloc[-1]),
+            "%D": float(kdj["%D"].iloc[-1]),
+            "%J": float(kdj["%J"].iloc[-1])
         },
     }
 
@@ -507,3 +518,54 @@ def calculate_hurst_exponent(price_series: pd.Series, max_lag: int = 20) -> floa
     except (ValueError, RuntimeWarning):
         # Return 0.5 (random walk) if calculation fails
         return 0.5
+
+def calculate_macd(prices_df: pd.DataFrame, short_window: int = 12, long_window: int = 26, signal_window: int = 9) -> pd.DataFrame:
+    """
+    Calculate MACD (Moving Average Convergence Divergence)
+    
+    Args:
+        prices_df: DataFrame with price data
+        short_window: Short EMA period
+        long_window: Long EMA period
+        signal_window: Signal line EMA period
+    
+    Returns:
+        DataFrame with MACD line and Signal line
+    """
+    short_ema = prices_df["close"].ewm(span=short_window, adjust=False).mean()
+    long_ema = prices_df["close"].ewm(span=long_window, adjust=False).mean()
+    macd_line = short_ema - long_ema
+    signal_line = macd_line.ewm(span=signal_window, adjust=False).mean()
+    
+    return pd.DataFrame({
+        "macd_line": macd_line,
+        "signal_line": signal_line
+    })
+
+def calculate_kdj(prices_df: pd.DataFrame, window: int = 14, k_period: int = 3, d_period: int = 3) -> pd.DataFrame:
+    """
+    Calculate KDJ indicator
+    
+    Args:
+        prices_df: DataFrame with OHLC data
+        window: Lookback period for %K calculation
+        k_period: Smoothing period for %K
+        d_period: Smoothing period for %D
+    
+    Returns:
+        DataFrame with %K, %D, and %J lines
+    """
+    low_min = prices_df["low"].rolling(window=window).min()
+    high_max = prices_df["high"].rolling(window=window).max()
+    
+    rsv = (prices_df["close"] - low_min) / (high_max - low_min) * 100
+    k_line = rsv.ewm(com=(k_period - 1), adjust=False).mean()
+    d_line = k_line.ewm(com=(d_period - 1), adjust=False).mean()
+    j_line = 3 * k_line - 2 * d_line
+    
+    return pd.DataFrame({
+        "%K": k_line,
+        "%D": d_line,
+        "%J": j_line
+    })
+
