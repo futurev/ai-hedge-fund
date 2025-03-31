@@ -153,6 +153,8 @@ def calculate_trend_signals(prices_df):
     # Calculate KDJ
     kdj = calculate_kdj(prices_df)
 
+    fib_levels = calculate_fibonacci_levels(prices_df)
+
     # Determine trend direction and strength
     short_trend = ema_8 > ema_21
     medium_trend = ema_21 > ema_55
@@ -180,7 +182,8 @@ def calculate_trend_signals(prices_df):
             "signal_line": float(macd["signal_line"].iloc[-1]),
             "%K": float(kdj["%K"].iloc[-1]),
             "%D": float(kdj["%D"].iloc[-1]),
-            "%J": float(kdj["%J"].iloc[-1])
+            "%J": float(kdj["%J"].iloc[-1]),
+            "fib_levels": fib_levels
         },
     }
 
