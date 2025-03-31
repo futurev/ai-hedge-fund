@@ -569,3 +569,54 @@ def calculate_kdj(prices_df: pd.DataFrame, window: int = 14, k_period: int = 3, 
         "%J": j_line
     })
 
+def identify_significant_highs_lows(prices_df: pd.DataFrame, lookback_period: int = 14) -> dict:
+    """
+    Identify the previous significant high and low in a daily chart.
+    
+    Args:
+        prices_df: DataFrame with OHLC data
+        lookback_period: Number of days to look back to identify significant highs and lows
+    
+    Returns:
+        dict: Previous significant high and low with their corresponding dates
+    """
+    # Identify the local maxima (highs) and minima (lows) within the lookback period
+    rolling_high = prices_df["high"].rolling(window=lookback_period).max()
+    rolling_low = prices_df["low"].rolling(window=lookback_period).min()
+
+    # Find the last significant high and low
+    last_significant_high = rolling_high.iloc[-1]
+    last_significant_low = rolling_low.iloc[-1]
+
+    # Find the dates of the last significant high and low
+    last_significant_high_date = prices_df["high"].idxmax()
+    last_significant_low_date = prices_df["low"].idxmin()
+
+    return {
+        "last_significant_high": {
+            "value": last_significant_high,
+            "date": last_significant_high_date
+        },
+        "last_significant_low": {
+            "value": last_significant_low,
+            "date": last_significant_low_date
+        }
+    }
+
+def calculate_fibonacci_levels(prices_df: pd.DataFrame, period: int = 14) -> dict:
+    highest_high = prices_df["high"].rolling(window=period).max().iloc[-1]
+    lowest_low = prices_df["low"].rolling(window=period).min().iloc[-1]
+    diff = highest_high - lowest_low
+    fib_levels = {
+        "level_0": highest_high,
+        "level_0.236": highest_high - 0.236 * diff,
+        "level_0.382": highest_high - 0.382 * diff,
+        "level_0.5": highest_high - 0.5 * diff,
+        "level_0.618": highest_high - 0.618 * diff,
+        "level_0.786": highest_high - 0.786 * diff,
+        "level_1": lowest_low,
+    }
+    return fib_levels
+
+
+
